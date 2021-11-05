@@ -16,16 +16,10 @@
 
 package com.codelab.android.datastore.data
 
-import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.SharedPreferencesMigration
 import androidx.datastore.preferences.core.*
-import androidx.datastore.preferences.createDataStore
 import kotlinx.coroutines.flow.*
 import java.io.IOException
-
-private const val USER_PREFERENCES_NAME = "user_preferences"
-private const val SORT_ORDER_KEY = "sort_order"
 
 enum class SortOrder {
     NONE,
@@ -39,18 +33,14 @@ data class UserPreferences(val showCompleted: Boolean, val sortOrder: SortOrder)
 /**
  * Class that handles saving and retrieving user preferences
  */
-class UserPreferencesRepository private constructor(context: Context) {
+class UserPreferencesRepository (
+    private val dataStore: DataStore<Preferences>
+) {
 
     private object PreferencesKeys {
         val SHOW_COMPLETED = booleanPreferencesKey("show_completed")
         val SORT_ORDER = stringPreferencesKey("sort_order")
     }
-
-    private val dataStore: DataStore<Preferences> =
-        context.createDataStore(
-            name = USER_PREFERENCES_NAME,
-            migrations = listOf(SharedPreferencesMigration(context, USER_PREFERENCES_NAME))
-        )
 
     val userPreferencesFlow: Flow<UserPreferences> = dataStore.data
         .catch { exception ->
@@ -131,19 +121,5 @@ class UserPreferencesRepository private constructor(context: Context) {
     }
 
     companion object {
-        @Volatile
-        private var INSTANCE: UserPreferencesRepository? = null
-
-        fun getInstance(context: Context): UserPreferencesRepository {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE?.let {
-                    return it
-                }
-
-                val instance = UserPreferencesRepository(context)
-                INSTANCE = instance
-                instance
-            }
-        }
     }
 }
